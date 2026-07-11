@@ -1,0 +1,26 @@
+# docker-compose cho môi trường LOCAL: Phần 1 chỉ cần Postgres.
+# App (api) ta chạy trực tiếp bằng `pnpm dev` khi dev cho nhanh (hot reload).
+# Các phần sau sẽ thêm service (Redis ở Phần 2, Keycloak ở Phần 3).
+# Ở Phần 8 ta sẽ đóng gói cả api/frontend vào compose để chạy full stack.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: app_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app_password
+      POSTGRES_DB: app_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

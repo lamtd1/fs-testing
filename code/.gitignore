@@ -1,0 +1,23 @@
+node_modules/
+dist/
+build/
+coverage/
+
+# Env — KHÔNG BAO GIỜ commit file .env thật
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Prisma
+apps/api/prisma/*.db
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

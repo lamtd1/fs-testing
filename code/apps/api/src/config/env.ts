@@ -1,0 +1,26 @@
+// Đọc và VALIDATE biến môi trường bằng Zod ngay khi app khởi động.
+// Nếu thiếu/sai biến -> app crash ngay với thông báo rõ ràng, thay vì lỗi mơ hồ lúc runtime.
+import { z } from "zod";
+
+const envSchema = z.object({
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
+  PORT: z.coerce.number().default(4000),
+
+  DATABASE_URL: z.string().url(),
+
+  CORS_ORIGIN: z.string().default("http://localhost:5173"),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  // In lỗi đẹp rồi thoát — fail fast.
+  console.error("❌ Biến môi trường không hợp lệ:");
+  console.error(parsed.error.flatten().fieldErrors);
+  process.exit(1);
+}
+
+export const env = parsed.data;
+export type Env = typeof env;
