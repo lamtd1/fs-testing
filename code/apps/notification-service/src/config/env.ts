@@ -1,18 +1,15 @@
 import "dotenv/config"; // nạp .env của CHÍNH service này (cwd)
-// ENV của gateway-lite. Chỉ cần biết địa chỉ các service để proxy tới.
+// ENV của notification-service. Nó chỉ cần Redis (nơi chứa queue).
 import { z } from "zod";
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  PORT: z.coerce.number().default(4000),
-  CORS_ORIGIN: z.string().default("http://localhost:5173"),
-  AUTH_SERVICE_URL: z.string().url().default("http://localhost:4001"),
-  USER_SERVICE_URL: z.string().url().default("http://localhost:4002"),
+  REDIS_URL: z.string().url(),
 });
 
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
-  console.error("❌ [gateway] Biến môi trường không hợp lệ:");
+  console.error("❌ [notification-service] Biến môi trường không hợp lệ:");
   console.error(parsed.error.flatten().fieldErrors);
   process.exit(1);
 }

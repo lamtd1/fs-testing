@@ -1,163 +1,91 @@
 # Fullstack Modern — Monorepo
 
-Repo thực hành theo tutorial.
-- **Phần 0-1**: setup monorepo + backend Express nền tảng (Controller→Service→Repository, Zod, Prisma, error handling).
-- **Phần 2**: Auth — JWT access/refresh, argon2, refresh token rotation + reuse detection (Redis), RBAC.
-- **Phần 3**: OAuth 2.0 / OIDC — Authorization Code + PKCE, account linking, chạy được với Google & Keycloak.
-- **Phần 4**: Frontend React — Vite + Tailwind, React Router (protected/admin routes), TanStack Query, Zustand, RHF+Zod, axios interceptor tự refresh, silent refresh khi F5.
-- **Phần 5**: Message Queue (BullMQ) — gửi email chào mừng nền, worker tiến trình riêng, retry + backoff, dead-letter queue, idempotency.
+Repo thực hành theo tutorial. **Trạng thái hiện tại: Phần 6.2 (đã tách microservices).**
+
+- **Phần 0-1**: monorepo + backend Express nền tảng.
+- **Phần 2**: Auth — JWT access/refresh, argon2, refresh rotation (Redis), RBAC.
+- **Phần 3**: OAuth 2.0 / OIDC (Google & Keycloak). *(đang chờ port sang auth-service ở 6.2b)*
+- **Phần 4**: Frontend React.
+- **Phần 5**: Message Queue (BullMQ).
+- **Phần 6**: Microservices — tách monolith thành **auth-service + user-service + notification-service**,
+  dùng chung `packages/shared`, gateway-lite ở `apps/api`. Xem `06-Phan-6-Microservices/`.
+
+## Kiến trúc hiện tại
+
+```
+Frontend :5173 ──> gateway :4000 (apps/api) ──> auth-service :4001  ──(REST)──> user-service :4002
+                                            └──> user-service :4002
+auth-service ──(event welcome email)──> Redis ──> notification-service (worker)
+DB: app_auth (auth-service) + app_user (user-service)   — database-per-service
+```
 
 ## Yêu cầu
-- Node >= 20 (bạn đang có v25 ✅)
-- pnpm (cài: `npm install -g pnpm`)
-- Docker (cho Postgres + Redis)
+- Node >= 20, pnpm, Docker.
 
 ## Chạy lần đầu
 
 ```bash
 cd code
-
-# 1) Cài dependencies cho toàn workspace
 pnpm install
 
-# 2) Tạo file .env từ mẫu
-cp .env.example .env
+# 1) Tạo .env cho từng service
+cp apps/api/.env.example                  apps/api/.env
+cp apps/auth-service/.env.example         apps/auth-service/.env
+cp apps/user-service/.env.example         apps/user-service/.env
+cp apps/notification-service/.env.example apps/notification-service/.env
 
-# 3) Bật Postgres + Redis bằng Docker
+# 2) Bật Postgres (tự tạo app_auth + app_user) + Redis
 pnpm db:up
 
-# 4) Tạo bảng trong DB (chạy migration Prisma)
-pnpm --filter @app/api prisma:migrate    # đặt tên migration: "init"
+# 3) Migrate + seed cho từng DB
+pnpm migrate:auth      # đặt tên migration: "init"
+pnpm migrate:user      # đặt tên migration: "init"
+pnpm seed:auth
+pnpm seed:user
 
-# 5) (tuỳ chọn) seed dữ liệu mẫu
-pnpm --filter @app/api prisma:seed
+# 4) Chạy tất cả service (song song)
+pnpm dev:all
+#   hoặc mở nhiều terminal: pnpm dev:auth / dev:user / dev:notif / dev:gateway
 
-# 6) Chạy API (hot reload)
-pnpm dev
+# 5) Frontend (terminal khác)
+pnpm dev:web
 ```
 
-API chạy ở `http://localhost:4000`.
+Gateway ở `http://localhost:4000` (FE proxy `/api` sang đây — không đổi gì so với Phần 4).
 
-## Chạy Frontend (Phần 4)
-
-Mở terminal thứ hai (backend vẫn đang chạy):
-
-```bash
-cd code
-pnpm --filter @app/web dev
-```
-
-Frontend chạy ở `http://localhost:5173` (tự proxy `/api` sang backend :4000).
-Đăng nhập thử với `admin@example.com` / `password123` (sau khi đã `prisma:seed`).
-
-## Chạy Worker (Phần 5)
-
-Worker là **tiến trình riêng** xử lý job nền (gửi email chào mừng). Mở terminal thứ ba:
-
-```bash
-cd code
-pnpm --filter @app/api worker
-```
-
-Thử: đăng ký một user mới ở frontend → xem log worker in `📧 Đã gửi email chào mừng`.
-Đăng ký email bắt đầu bằng `fail` (vd `fail@test.com`) → xem worker retry 3 lần rồi đẩy vào dead-letter queue.
-
-## Thử API
-
-```bash
-# Health
-curl http://localhost:4000/api/health
-curl http://localhost:4000/api/health/ready
-
-# Tạo user (validate bằng Zod)
-curl -X POST http://localhost:4000/api/users \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","name":"Test"}'
-
-# Thử gửi email sai -> nhận lỗi 400 có chi tiết field
-curl -X POST http://localhost:4000/api/users \
-  -H "Content-Type: application/json" \
-  -d '{"email":"khong-phai-email","name":""}'
-
-# Danh sách + phân trang (LƯU Ý: giờ cần quyền ADMIN, xem phần Auth)
-curl "http://localhost:4000/api/users?page=1&limit=10"
-```
-
-## Thử Auth (Phần 2)
-
-Sau khi `prisma:seed`, có sẵn: `admin@example.com` (ADMIN) và `user@example.com` (USER), mật khẩu `password123`.
+## Thử nhanh
 
 ```bash
 B=http://localhost:4000
 
-# Đăng ký (nhận accessToken trong body + refresh_token trong httpOnly cookie)
-curl -s -c cookies.txt -X POST $B/api/auth/register \
-  -H "Content-Type: application/json" \
+# Đăng ký -> auth-service tạo credential + GỌI user-service tạo profile + phát event email
+curl -s -c cookies.txt -X POST $B/api/auth/register -H "Content-Type: application/json" \
   -d '{"email":"alice@example.com","name":"Alice","password":"secret123"}'
+# -> xem log notification-service in "📧 Đã gửi email chào mừng"
 
-# Đăng nhập admin, lấy access token
+# Đăng nhập admin (seed) -> lấy access token
 ADMIN=$(curl -s -X POST $B/api/auth/login -H "Content-Type: application/json" \
   -d '{"email":"admin@example.com","password":"password123"}' | jq -r .accessToken)
 
-# Route cần đăng nhập
+# /me (auth-service ghép credential + gọi user-service lấy name)
 curl -s $B/api/auth/me -H "Authorization: Bearer $ADMIN"
 
-# RBAC: chỉ ADMIN mới xem được danh sách user
-curl -s $B/api/users -H "Authorization: Bearer $ADMIN"
-
-# Refresh (dùng cookie) -> access token mới + xoay refresh token
-curl -s -b cookies.txt -c cookies.txt -X POST $B/api/auth/refresh
-
-# Logout -> thu hồi refresh token + xoá cookie
-curl -s -b cookies.txt -c cookies.txt -X POST $B/api/auth/logout
+# Danh sách user (gateway -> user-service, cần ADMIN)
+curl -s "$B/api/users" -H "Authorization: Bearer $ADMIN"
 ```
 
-## Thử OAuth / OIDC với Keycloak (Phần 3)
+> **Lưu ý:** đăng nhập OAuth (nút Google/Keycloak ở FE) tạm thời chưa chạy — OAuth sẽ được
+> chuyển sang auth-service ở commit **6.2b**. Đăng nhập email/mật khẩu hoạt động bình thường.
 
-```bash
-# Bật Keycloak (đã kèm trong docker-compose, tự import realm "app")
-docker compose up -d keycloak
-# Admin console: http://localhost:8081  (admin / admin)
-# Chờ ~30s cho tới khi discovery sẵn sàng:
-curl -s http://localhost:8081/realms/app/.well-known/openid-configuration | head -c 80
-
-# Thêm vào .env:
-#   KEYCLOAK_ISSUER=http://localhost:8081/realms/app
-#   KEYCLOAK_CLIENT_ID=app-api
-#   KEYCLOAK_CLIENT_SECRET=keycloak-client-secret
-
-# Rồi mở TRÌNH DUYỆT tới:
-#   http://localhost:4000/api/auth/oauth/keycloak/login
-# Đăng nhập bằng user test:  tester / password123
-```
-
-Sau khi đăng nhập, backend tạo user (nếu chưa có), set refresh cookie, và redirect về
-`FRONTEND_URL/auth/callback?login=success`. Frontend (Phần 4) sẽ gọi `/api/auth/refresh` để lấy access token.
-
-> **Google**: điền `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` vào `.env`, rồi dùng
-> `http://localhost:4000/api/auth/oauth/google/login`. Xem `03-Phan-3-OAuth-OIDC.md` mục 3.9.
-
-
-## Cấu trúc
+## Cấu trúc (rút gọn)
 
 ```
 code/
-├─ package.json            # scripts toàn workspace
-├─ pnpm-workspace.yaml     # khai báo workspaces
-├─ tsconfig.base.json      # TS config dùng chung (strict)
-├─ docker-compose.yml      # postgres + redis (local)
-├─ .env.example
+├─ packages/shared/        # @app/shared: errors, logger, validate, auth(JWT), contracts, events
 └─ apps/
-   └─ api/
-      ├─ prisma/schema.prisma   # định nghĩa DB
-      └─ src/
-         ├─ index.ts            # khởi động server
-         ├─ app.ts              # ráp middleware + routes
-         ├─ config/env.ts       # validate ENV bằng Zod
-         ├─ lib/                # logger, prisma client
-         ├─ middleware/         # requestId, validate, errorHandler
-         ├─ utils/              # AppError, asyncHandler
-         └─ modules/            # theo domain
-            ├─ health/
-            └─ user/            # routes → controller → service → repository
+   ├─ api/                 # gateway-lite (proxy) :4000  — thay ở Phần 7
+   ├─ auth-service/        # :4001 · DB app_auth · credential + JWT + refresh(Redis)
+   ├─ user-service/        # :4002 · DB app_user · profile CRUD
+   ├─ notification-service/# worker · nghe event welcome email
+   └─ web/                 # frontend React (Phần 4)
 ```

@@ -27,3 +27,6 @@ apps/api/prisma/*.db
 
 # Claude Code local settings
 .claude/
+
+# Prisma generated client (per-service, sinh lại bằng postinstall)
+**/src/generated/

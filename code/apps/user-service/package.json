@@ -1,22 +1,29 @@
 {
-  "name": "@app/api",
-  "version": "0.2.0",
+  "name": "@app/user-service",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
-  "//": "Từ Phần 6: monolith đã tách thành các service. apps/api nay là GATEWAY-LITE (proxy) — sẽ thay bằng API Gateway thật ở Phần 7.",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:generate": "prisma generate",
+    "prisma:seed": "tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@app/shared": "workspace:*",
+    "@prisma/client": "^5.20.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "helmet": "^8.0.0",
-    "http-proxy-middleware": "^3.0.3",
+    "pino": "^9.4.0",
     "pino-http": "^10.3.0",
     "zod": "^3.23.8"
   },
@@ -25,6 +32,7 @@
     "@types/express": "^4.17.21",
     "@types/node": "^20.16.0",
     "pino-pretty": "^11.2.2",
+    "prisma": "^5.20.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }

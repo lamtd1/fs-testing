@@ -1,7 +1,7 @@
 {
   "name": "fullstack-modern",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Monorepo tutorial: end-to-end modern web system",
   "packageManager": "pnpm@9.12.0",
   "engines": {
@@ -14,13 +14,20 @@
     }
   },
   "scripts": {
-    "dev": "pnpm --filter @app/api dev",
+    "dev:gateway": "pnpm --filter @app/api dev",
+    "dev:auth": "pnpm --filter @app/auth-service dev",
+    "dev:user": "pnpm --filter @app/user-service dev",
+    "dev:notif": "pnpm --filter @app/notification-service dev",
     "dev:web": "pnpm --filter @app/web dev",
+    "dev:all": "pnpm --parallel --filter @app/api --filter @app/auth-service --filter @app/user-service --filter @app/notification-service run dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "db:up": "docker compose up -d postgres redis",
     "db:down": "docker compose down",
-    "db:migrate": "pnpm --filter @app/api prisma:migrate",
-    "db:studio": "pnpm --filter @app/api prisma:studio"
+    "db:reset": "docker compose down -v && docker compose up -d postgres redis",
+    "migrate:auth": "pnpm --filter @app/auth-service prisma:migrate",
+    "migrate:user": "pnpm --filter @app/user-service prisma:migrate",
+    "seed:auth": "pnpm --filter @app/auth-service prisma:seed",
+    "seed:user": "pnpm --filter @app/user-service prisma:seed"
   }
 }

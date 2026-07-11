@@ -1,0 +1,31 @@
+// DB RIÊNG của auth-service (app_auth). NGUỒN SỰ THẬT cho authn/authz.
+// KHÔNG chứa profile (name...) — cái đó thuộc user-service.
+generator client {
+  provider = "prisma-client-js"
+  // Output RIÊNG cho service này. Bắt buộc trong monorepo pnpm: nếu để mặc định,
+  // các service sẽ ghi đè client của nhau (cùng một @prisma/client hoisted).
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// Thông tin để CHỨNG MINH danh tính + phân quyền. Khoá chính là userId — chính là
+// id bên user-service (một user = một credential + một profile, cùng userId).
+model Credential {
+  userId       String   @id
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("credentials")
+}

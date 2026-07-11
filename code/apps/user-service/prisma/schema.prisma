@@ -1,0 +1,22 @@
+// DB RIÊNG của user-service (app_user). Không service nào khác được đụng bảng này.
+// user-service là NGUỒN SỰ THẬT cho "user là ai" (profile).
+generator client {
+  provider = "prisma-client-js"
+  // Output RIÊNG cho service này (xem giải thích ở auth-service/schema.prisma).
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
