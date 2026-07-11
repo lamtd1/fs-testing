@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    /* Vite tự lo phần biên dịch/bundle -> tsc chỉ dùng để CHECK type, không emit. */
+    "noEmit": true,
+    "declaration": false,
+
+    /* Đây là app trình duyệt -> cần lib DOM + resolution kiểu bundler. */
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": [],
+
+    "baseUrl": "src",
+    "paths": { "@/*": ["*"] }
+  },
+  "include": ["src", "vite.config.ts"]
+}

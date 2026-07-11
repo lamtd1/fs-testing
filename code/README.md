@@ -1,12 +1,13 @@
 # Fullstack Modern — Monorepo
 
-Repo thực hành theo tutorial. **Trạng thái hiện tại: hết Phần 3.**
+Repo thực hành theo tutorial. **Trạng thái hiện tại: hết Phần 4.**
 
 - **Phần 0-1**: setup monorepo + backend Express nền tảng (Controller→Service→Repository, Zod, Prisma, error handling).
 - **Phần 2**: Auth — JWT access/refresh, argon2, refresh token rotation + reuse detection (Redis), RBAC.
 - **Phần 3**: OAuth 2.0 / OIDC — Authorization Code + PKCE, account linking, chạy được với Google & Keycloak.
+- **Phần 4**: Frontend React — Vite + Tailwind, React Router (protected/admin routes), TanStack Query, Zustand, RHF+Zod, axios interceptor tự refresh, silent refresh khi F5.
 
-> Các phần sau (Frontend, Message Queue...) sẽ được thêm dần trong các commit tiếp theo.
+> Các phần sau (Message Queue...) sẽ được thêm dần trong các commit tiếp theo.
 
 ## Yêu cầu
 - Node >= 20 (bạn đang có v25 ✅)
@@ -38,6 +39,18 @@ pnpm dev
 ```
 
 API chạy ở `http://localhost:4000`.
+
+## Chạy Frontend (Phần 4)
+
+Mở terminal thứ hai (backend vẫn đang chạy):
+
+```bash
+cd code
+pnpm --filter @app/web dev   # hoặc: pnpm dev:web
+```
+
+Frontend chạy ở `http://localhost:5173` (tự proxy `/api` sang backend :4000).
+Đăng nhập thử với `admin@example.com` / `password123` (sau khi đã `prisma:seed`).
 
 ## Thử Auth (Phần 2)
 
