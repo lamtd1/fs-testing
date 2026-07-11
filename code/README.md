@@ -1,6 +1,6 @@
 # Fullstack Modern — Monorepo
 
-Repo thực hành theo tutorial. **Trạng thái hiện tại: hết Phần 7 (API Gateway thật).**
+Repo thực hành theo tutorial. **Trạng thái hiện tại: hết Phần 8 (đóng gói Docker).**
 
 - **Phần 0-1**: monorepo + backend Express nền tảng.
 - **Phần 2**: Auth — JWT access/refresh, argon2, refresh rotation (Redis), RBAC.
@@ -12,6 +12,15 @@ Repo thực hành theo tutorial. **Trạng thái hiện tại: hết Phần 7 (A
   (OTel+Jaeger), resilience (timeout/retry/circuit breaker). Xem `06-Phan-6-Microservices/`.
 - **Phần 7**: API Gateway thật (`apps/api`) — verify JWT tập trung + truyền context (x-user-*),
   CORS tập trung, rate limiting (Redis), BFF aggregation. Xem `07-Phan-7-API-Gateway/`.
+- **Phần 8**: Đóng gói Docker — Dockerfile mỗi service + web (Nginx), `docker-compose.app.yml`
+  dựng full-stack một lệnh (đã verify chạy thật). Xem `08-Phan-8-Docker/`.
+
+### Chạy toàn hệ thống bằng Docker
+```bash
+cd code
+docker compose -f docker-compose.yml -f docker-compose.app.yml up -d --build
+# Web http://localhost:8080 · Gateway http://localhost:4000
+```
 
 ## Kiến trúc hiện tại
 
