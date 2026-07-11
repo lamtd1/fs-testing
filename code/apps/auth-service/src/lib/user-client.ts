@@ -6,7 +6,7 @@
 //  cả chuỗi auth→user cùng một id. 6.7 sẽ thêm timeout/retry/circuit breaker.
 // ============================================================================
 import { env } from "../config/env.js";
-import { ServiceUnavailable, REQUEST_ID_HEADER, getRequestId } from "@app/shared";
+import { ServiceUnavailable, Conflict, REQUEST_ID_HEADER, getRequestId } from "@app/shared";
 
 export interface Profile {
   id: string;
@@ -37,6 +37,9 @@ export const userClient = {
     } catch {
       throw ServiceUnavailable("Không gọi được user-service");
     }
+    // Phân biệt lỗi: 409 (email đã tồn tại) là lỗi NGHIỆP VỤ -> Conflict, không
+    // phải "service chết". Nhờ đó saga báo đúng 409 cho client thay vì 503.
+    if (res.status === 409) throw Conflict("Email đã được sử dụng");
     if (!res.ok) throw ServiceUnavailable(`user-service trả lỗi ${res.status} khi tạo profile`);
     return (await res.json()) as Profile;
   },

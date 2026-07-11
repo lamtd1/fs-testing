@@ -1,7 +1,7 @@
 // SERVICE auth: orchestrate register/login/refresh/logout/me.
 // Điểm mới so với monolith: KHÔNG còn tự chứa profile (name). Nó GỌI user-service
 // để tạo/đọc profile -> đây là chỗ "microservice" lộ rõ nhất.
-import { Conflict, Unauthorized } from "@app/shared";
+import { Conflict, Unauthorized, Saga } from "@app/shared";
 import type { RegisterInput, LoginInput, AuthUserDTO } from "@app/shared";
 import { credentialRepository } from "./credential.repository.js";
 import { hashPassword, verifyPassword } from "./password.js";
@@ -22,22 +22,32 @@ export const authService = {
     accessToken: string;
     refreshToken: string;
   }> {
+    // Fast-path: chặn sớm nếu email đã có credential (đỡ gọi mạng vô ích).
+    // Nhưng "chốt chặn" thật là UNIQUE ở DB + saga bên dưới (chống race).
     const existing = await credentialRepository.findByEmail(input.email);
     if (existing) throw Conflict("Email đã được sử dụng");
 
-    // 1) Tạo profile ở user-service TRƯỚC (nó sinh userId và trả về).
-    const profile = await userClient.createProfile({ email: input.email, name: input.name });
-
+    // SAGA đăng ký: 2 bước ghi ở 2 DB khác nhau, không có transaction chung.
+    const saga = new Saga(logger, "register");
     try {
-      // 2) Tạo credential trỏ về userId đó.
+      // Bước 1: tạo profile ở user-service (nó sinh userId). Bù trừ: xoá profile.
+      const profile = await userClient.createProfile({ email: input.email, name: input.name });
+      saga.onCompensate("createProfile", () => userClient.deleteProfile(profile.id));
+
+      // Bước 2: tạo credential trỏ về userId. Nếu UNIQUE(email) va chạm (race) ->
+      // lỗi -> saga bù trừ (xoá profile vừa tạo). Bù trừ: xoá credential.
       const passwordHash = await hashPassword(input.password);
       const cred = await credentialRepository.create({
         userId: profile.id,
         email: input.email,
         passwordHash,
       });
+      saga.onCompensate("createCredential", async () => {
+        await credentialRepository.deleteById(cred.userId);
+      });
 
-      // 3) Phát event welcome email (best-effort — Redis lỗi KHÔNG làm hỏng đăng ký).
+      // Bước 3 (ngoài saga): phát event welcome email — BEST-EFFORT, không bù trừ.
+      // Redis lỗi KHÔNG được làm hỏng đăng ký (email là "nice-to-have").
       try {
         await enqueueWelcomeEmail({ userId: cred.userId, email: cred.email, name: profile.name });
       } catch (err) {
@@ -54,9 +64,7 @@ export const authService = {
       const refreshToken = await issueRefreshToken(cred.userId);
       return { user, accessToken, refreshToken };
     } catch (err) {
-      // BÙ TRỪ sơ khai: profile đã tạo mà credential lỗi -> xoá profile mồ côi.
-      // (6.4 sẽ nâng thành saga bài bản.)
-      await userClient.deleteProfile(profile.id);
+      await saga.compensate(); // hoàn tác các bước đã thành công, theo thứ tự ngược
       throw err;
     }
   },
