@@ -1,13 +1,12 @@
 // ============================================================================
-//  USER CLIENT — gọi LIÊN SERVICE sang user-service qua REST (fetch).
+//  USER CLIENT — gọi LIÊN SERVICE sang user-service qua REST (fetch) cho GHI
+//  (create/delete profile). ĐỌC profile giờ đi qua gRPC (user-grpc-client.ts).
 // ----------------------------------------------------------------------------
-//  Đây là bản NGÂY THƠ (naive): chưa truyền correlation-id, chưa retry/timeout,
-//  chưa circuit breaker. 6.3 sẽ thay bằng client tử tế (truyền x-request-id),
-//  6.7 thêm timeout/retry/circuit breaker. Giữ đơn giản ở 6.2 để thấy "trần trụi"
-//  một cuộc gọi mạng giữa hai service trông thế nào.
+//  6.3: truyền correlation-id (x-request-id) lấy từ AsyncLocalStorage -> log của
+//  cả chuỗi auth→user cùng một id. 6.7 sẽ thêm timeout/retry/circuit breaker.
 // ============================================================================
 import { env } from "../config/env.js";
-import { ServiceUnavailable } from "@app/shared";
+import { ServiceUnavailable, REQUEST_ID_HEADER, getRequestId } from "@app/shared";
 
 export interface Profile {
   id: string;
@@ -17,6 +16,14 @@ export interface Profile {
 
 const BASE = `${env.USER_SERVICE_URL}/api/internal/users`;
 
+// Gắn correlation-id (nếu đang trong một request) vào header gọi đi.
+function headers(extra?: Record<string, string>): Record<string, string> {
+  const h: Record<string, string> = { ...extra };
+  const rid = getRequestId();
+  if (rid) h[REQUEST_ID_HEADER] = rid;
+  return h;
+}
+
 export const userClient = {
   // Tạo profile ở user-service; nó tự sinh id và trả về.
   async createProfile(input: { email: string; name: string }): Promise<Profile> {
@@ -24,7 +31,7 @@ export const userClient = {
     try {
       res = await fetch(BASE, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: headers({ "content-type": "application/json" }),
         body: JSON.stringify(input),
       });
     } catch {
@@ -34,24 +41,12 @@ export const userClient = {
     return (await res.json()) as Profile;
   },
 
-  // Đọc profile (lấy name). Best-effort: lỗi/timeout -> trả null để caller tự xử lý
-  // (đăng nhập vẫn chạy được dù user-service đang chập chờn -> degrade gracefully).
-  async getProfile(id: string): Promise<Profile | null> {
-    try {
-      const res = await fetch(`${BASE}/${id}`);
-      if (!res.ok) return null;
-      return (await res.json()) as Profile;
-    } catch {
-      return null;
-    }
-  },
-
   // Bù trừ saga: xoá profile vừa tạo nếu bước sau (tạo credential) thất bại.
   async deleteProfile(id: string): Promise<void> {
     try {
-      await fetch(`${BASE}/${id}`, { method: "DELETE" });
+      await fetch(`${BASE}/${id}`, { method: "DELETE", headers: headers() });
     } catch {
-      // nuốt lỗi — bù trừ là best-effort ở 6.2; 6.4 làm chặt hơn.
+      // nuốt lỗi — bù trừ best-effort; 6.4 làm chặt hơn.
     }
   },
 };

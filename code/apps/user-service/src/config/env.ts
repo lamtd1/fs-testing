@@ -9,6 +9,8 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   // Cần để VERIFY access token cho route quản trị (authenticate + authorize ADMIN).
   JWT_ACCESS_SECRET: z.string().min(16, "JWT_ACCESS_SECRET quá ngắn"),
+  // Cổng gRPC cho gọi nội bộ (6.3).
+  GRPC_PORT: z.coerce.number().default(4092),
 });
 
 const parsed = envSchema.safeParse(process.env);

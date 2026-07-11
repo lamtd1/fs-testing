@@ -3,17 +3,21 @@ import { randomUUID } from "node:crypto";
 import type { Request, Response, NextFunction } from "express";
 import { AppError } from "./errors.js";
 import type { Logger } from "./logger.js";
+import { requestContext } from "./context.js";
 
 // Header mang correlation-id XUYÊN các service. Nối tiếp x-request-id của Phần 1.
 export const REQUEST_ID_HEADER = "x-request-id";
 
 // Gán req.id: nếu request đến đã có id (từ gateway/service khác) -> GIỮ NGUYÊN,
 // nhờ vậy 1 hành động user đi qua nhiều service vẫn cùng 1 id -> gộp log được.
+// Đồng thời đặt id vào AsyncLocalStorage -> tầng sâu (user-client) đọc lại được
+// để truyền tiếp sang service kế -> correlation-id chạy suốt chuỗi.
 export function requestId(req: Request, res: Response, next: NextFunction) {
   const incoming = req.header(REQUEST_ID_HEADER);
-  req.id = incoming ?? randomUUID();
-  res.setHeader(REQUEST_ID_HEADER, req.id);
-  next();
+  const id = incoming ?? randomUUID();
+  req.id = id;
+  res.setHeader(REQUEST_ID_HEADER, id);
+  requestContext.run({ requestId: id }, () => next());
 }
 
 export function notFoundHandler(req: Request, res: Response) {

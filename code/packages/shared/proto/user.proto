@@ -1,0 +1,21 @@
+// CONTRACT gRPC cho gọi NỘI BỘ auth-service -> user-service.
+// Đây là "hợp đồng" cứng: cả server (user-service) và client (auth-service) cùng
+// biên dịch từ file này -> không lệch. So với REST/JSON: có schema chặt + nhanh hơn.
+syntax = "proto3";
+
+package user;
+
+service UserInternal {
+  // Lấy profile theo id (auth-service dùng khi login/me).
+  rpc GetProfile(GetProfileRequest) returns (Profile);
+}
+
+message GetProfileRequest {
+  string id = 1;
+}
+
+message Profile {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+}

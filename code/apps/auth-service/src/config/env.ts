@@ -18,6 +18,8 @@ const envSchema = z.object({
 
   // Địa chỉ user-service để gọi liên service (tạo/đọc profile).
   USER_SERVICE_URL: z.string().url().default("http://localhost:4002"),
+  // Địa chỉ gRPC của user-service (6.3): host:port, KHÔNG có scheme http.
+  USER_SERVICE_GRPC: z.string().default("localhost:4092"),
 
   // --- OAuth / OIDC (6.2b) ---
   FRONTEND_URL: z.string().url().default("http://localhost:5173"),

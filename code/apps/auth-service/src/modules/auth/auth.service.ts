@@ -12,6 +12,7 @@ import {
   revokeRefreshToken,
 } from "./token.service.js";
 import { userClient } from "../../lib/user-client.js";
+import { userGrpcClient } from "../../lib/user-grpc-client.js";
 import { enqueueWelcomeEmail } from "../../queues/email.producer.js";
 import { logger } from "../../lib/logger.js";
 
@@ -75,7 +76,8 @@ export const authService = {
 
     // Login TỰ CHỦ: role đã có trong credential -> cấp JWT không cần user-service.
     // Chỉ lấy `name` để hiển thị (best-effort; user-service chập chờn vẫn login được).
-    const profile = await userClient.getProfile(cred.userId);
+    // ĐỌC qua gRPC (6.3) — truyền correlation-id trong metadata.
+    const profile = await userGrpcClient.getProfile(cred.userId);
     const name = profile?.name ?? cred.email.split("@")[0] ?? cred.email;
 
     const user: AuthUserDTO = { id: cred.userId, email: cred.email, name, role: cred.role };
@@ -99,7 +101,7 @@ export const authService = {
   async me(userId: string): Promise<AuthUserDTO> {
     const cred = await credentialRepository.findById(userId);
     if (!cred) throw Unauthorized("Người dùng không còn tồn tại");
-    const profile = await userClient.getProfile(userId);
+    const profile = await userGrpcClient.getProfile(userId);
     return {
       id: cred.userId,
       email: cred.email,
