@@ -4,11 +4,12 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import type { CreateUserInput } from "./user.schema.js";
 
-// Các field AN TOÀN để trả ra ngoài (public).
+// Các field AN TOÀN để trả ra ngoài. TUYỆT ĐỐI không đưa passwordHash vào response.
 const publicUserSelect = {
   id: true,
   email: true,
   name: true,
+  role: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
@@ -26,15 +27,22 @@ export const userRepository = {
     ]);
   },
 
+  // findById dùng cho cả API user-management -> chỉ trả field public.
   findById(id: string) {
     return prisma.user.findUnique({ where: { id }, select: publicUserSelect });
   },
 
+  // findByEmail dùng cho auth login -> CẦN passwordHash nên trả full record.
   findByEmail(email: string) {
     return prisma.user.findUnique({ where: { email } });
   },
 
   create(data: CreateUserInput) {
+    return prisma.user.create({ data, select: publicUserSelect });
+  },
+
+  // Dùng cho đăng ký (auth module). Trả field public (đủ để ký access token).
+  createWithPassword(data: { email: string; name: string; passwordHash: string }) {
     return prisma.user.create({ data, select: publicUserSelect });
   },
 

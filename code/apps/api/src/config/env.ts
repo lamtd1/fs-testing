@@ -9,6 +9,13 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
 
   DATABASE_URL: z.string().url(),
+  REDIS_URL: z.string().url(),
+
+  // Auth (Phần 2). Bắt buộc, tối thiểu 16 ký tự.
+  JWT_ACCESS_SECRET: z.string().min(16, "JWT_ACCESS_SECRET quá ngắn"),
+  JWT_REFRESH_SECRET: z.string().min(16, "JWT_REFRESH_SECRET quá ngắn"),
+  ACCESS_TOKEN_TTL: z.string().default("15m"),
+  REFRESH_TOKEN_TTL: z.string().default("7d"),
 
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
 });
