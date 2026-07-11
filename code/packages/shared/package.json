@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
+    },
+    "./tracing": {
+      "types": "./src/tracing.ts",
+      "import": "./src/tracing.ts"
     }
   },
   "types": "./src/index.ts",
@@ -14,6 +18,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.52.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.54.0",
+    "@opentelemetry/sdk-node": "^0.54.0",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
     "pino": "^9.4.0",

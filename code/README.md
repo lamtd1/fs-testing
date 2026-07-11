@@ -36,6 +36,7 @@ cp apps/notification-service/.env.example apps/notification-service/.env
 
 # 2) Bật Postgres (tự tạo app_auth + app_user) + Redis
 pnpm db:up
+# (tuỳ chọn) Jaeger để xem distributed tracing: docker compose up -d jaeger  → UI http://localhost:16686
 
 # 3) Migrate + seed cho từng DB
 pnpm migrate:auth      # đặt tên migration: "init"

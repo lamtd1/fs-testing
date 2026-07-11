@@ -1,3 +1,4 @@
+import "./tracing.js"; // PHẢI đầu tiên: bật OpenTelemetry trước khi load http/express
 // Entrypoint notification-service: khởi động email worker + graceful shutdown.
 import { startEmailWorker } from "./email.worker.js";
 import { bullConnection } from "./lib/queue.js";

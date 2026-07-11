@@ -1,3 +1,4 @@
+import "./tracing.js"; // PHẢI đầu tiên: bật OpenTelemetry trước khi load http/express
 // ============================================================================
 //  GATEWAY-LITE (tạm cho Phần 6) — một cửa vào duy nhất :4000 cho frontend.
 // ----------------------------------------------------------------------------

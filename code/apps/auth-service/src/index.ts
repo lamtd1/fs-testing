@@ -1,3 +1,4 @@
+import "./tracing.js"; // PHẢI đầu tiên: bật OpenTelemetry trước khi load http/express
 import { createApp } from "./app.js";
 import { env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
