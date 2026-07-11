@@ -6,9 +6,8 @@
 // ============================================================================
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
-import { USER_PROTO_PATH, REQUEST_ID_HEADER, getRequestId } from "@app/shared";
+import { USER_PROTO_PATH, REQUEST_ID_HEADER, getRequestId, serviceRegistry } from "@app/shared";
 import type { GrpcProfile } from "@app/shared";
-import { env } from "../config/env.js";
 
 interface UserInternalClient extends grpc.Client {
   GetProfile(
@@ -32,7 +31,7 @@ const proto = grpc.loadPackageDefinition(packageDef) as unknown as {
 };
 
 const client = new proto.user.UserInternal(
-  env.USER_SERVICE_GRPC,
+  serviceRegistry.userGrpc(), // 6.5: phân giải địa chỉ qua registry
   grpc.credentials.createInsecure(),
 );
 

@@ -5,8 +5,13 @@
 //  6.3: truyền correlation-id (x-request-id) lấy từ AsyncLocalStorage -> log của
 //  cả chuỗi auth→user cùng một id. 6.7 sẽ thêm timeout/retry/circuit breaker.
 // ============================================================================
-import { env } from "../config/env.js";
-import { ServiceUnavailable, Conflict, REQUEST_ID_HEADER, getRequestId } from "@app/shared";
+import {
+  ServiceUnavailable,
+  Conflict,
+  REQUEST_ID_HEADER,
+  getRequestId,
+  serviceRegistry,
+} from "@app/shared";
 
 export interface Profile {
   id: string;
@@ -14,7 +19,8 @@ export interface Profile {
   name: string;
 }
 
-const BASE = `${env.USER_SERVICE_URL}/api/internal/users`;
+// Hỏi registry "user-service ở đâu" thay vì hardcode URL (6.5).
+const BASE = `${serviceRegistry.userHttp()}/api/internal/users`;
 
 // Gắn correlation-id (nếu đang trong một request) vào header gọi đi.
 function headers(extra?: Record<string, string>): Record<string, string> {

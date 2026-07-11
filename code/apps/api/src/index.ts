@@ -16,10 +16,14 @@ import helmet from "helmet";
 import cors from "cors";
 import { pinoHttp } from "pino-http";
 import { createProxyMiddleware } from "http-proxy-middleware";
-import { createLogger, requestId, notFoundHandler } from "@app/shared";
+import { createLogger, requestId, notFoundHandler, serviceRegistry } from "@app/shared";
 import { env } from "./config/env.js";
 
 const logger = createLogger({ name: "gateway", nodeEnv: env.NODE_ENV });
+
+// 6.5: gateway hỏi registry địa chỉ service đích (thay cho env riêng lẻ).
+const AUTH_TARGET = serviceRegistry.authHttp();
+const USER_TARGET = serviceRegistry.userHttp();
 const app = express();
 
 app.use(helmet());
@@ -33,7 +37,7 @@ app.use(pinoHttp({ logger, genReqId: (req) => (req as unknown as { id: string })
 app.use(
   "/api/auth",
   createProxyMiddleware({
-    target: env.AUTH_SERVICE_URL,
+    target: AUTH_TARGET,
     changeOrigin: true,
     pathRewrite: { "^/": "/api/auth/" },
   }),
@@ -41,7 +45,7 @@ app.use(
 app.use(
   "/api/users",
   createProxyMiddleware({
-    target: env.USER_SERVICE_URL,
+    target: USER_TARGET,
     changeOrigin: true,
     pathRewrite: { "^/": "/api/users/" },
   }),
@@ -51,6 +55,6 @@ app.use(notFoundHandler);
 
 app.listen(env.PORT, () => {
   logger.info(`🚪 gateway chạy tại http://localhost:${env.PORT}`);
-  logger.info(`   /api/auth  → ${env.AUTH_SERVICE_URL}`);
-  logger.info(`   /api/users → ${env.USER_SERVICE_URL}`);
+  logger.info(`   /api/auth  → ${AUTH_TARGET}`);
+  logger.info(`   /api/users → ${USER_TARGET}`);
 });
