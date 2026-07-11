@@ -1,0 +1,119 @@
+# ============================================================================
+#  FULL-STACK trong Docker. Dùng KÈM docker-compose.yml (hạ tầng) — merge 2 file:
+#     docker compose -f docker-compose.yml -f docker-compose.app.yml up -d --build
+#  File này thêm: 4 service Node + web (Nginx) + 2 init (đẩy schema & seed).
+#  Hạ tầng (postgres/redis/keycloak/jaeger) lấy từ docker-compose.yml.
+# ============================================================================
+
+# Neo (anchor) các biến dùng chung -> đỡ lặp.
+x-secrets: &secrets
+  JWT_ACCESS_SECRET: "docker-access-secret-min-16"
+  JWT_REFRESH_SECRET: "docker-refresh-secret-min-16"
+  GATEWAY_SECRET: "gateway-shared-secret"
+
+services:
+  # ---- INIT: đẩy schema vào DB (db push) + seed, rồi thoát ----
+  auth-init:
+    build: { context: ., dockerfile: apps/auth-service/Dockerfile }
+    environment:
+      DATABASE_URL: "postgresql://app:app_password@postgres:5432/app_auth?schema=public"
+      OTEL_SDK_DISABLED: "true"
+      <<: *secrets
+    command: sh -c "pnpm exec prisma db push --skip-generate --accept-data-loss && pnpm exec tsx prisma/seed.ts"
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  user-init:
+    build: { context: ., dockerfile: apps/user-service/Dockerfile }
+    environment:
+      DATABASE_URL: "postgresql://app:app_password@postgres:5432/app_user?schema=public"
+      GATEWAY_SECRET: "gateway-shared-secret"
+      OTEL_SDK_DISABLED: "true"
+    command: sh -c "pnpm exec prisma db push --skip-generate --accept-data-loss && pnpm exec tsx prisma/seed.ts"
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  # ---- SERVICES ----
+  auth-service:
+    build: { context: ., dockerfile: apps/auth-service/Dockerfile }
+    environment:
+      NODE_ENV: production
+      PORT: "4001"
+      DATABASE_URL: "postgresql://app:app_password@postgres:5432/app_auth?schema=public"
+      REDIS_URL: "redis://redis:6379"
+      CORS_ORIGIN: "http://localhost:8080"
+      FRONTEND_URL: "http://localhost:8080"
+      OAUTH_REDIRECT_BASE: "http://localhost:4000"
+      USER_SERVICE_URL: "http://user-service:4002"
+      USER_SERVICE_GRPC: "user-service:4092"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4318"
+      KEYCLOAK_ISSUER: "http://keycloak:8080/realms/app"
+      KEYCLOAK_CLIENT_ID: "app-api"
+      KEYCLOAK_CLIENT_SECRET: "keycloak-client-secret"
+      <<: *secrets
+    depends_on:
+      redis: { condition: service_healthy }
+      auth-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build: { context: ., dockerfile: apps/user-service/Dockerfile }
+    environment:
+      NODE_ENV: production
+      PORT: "4002"
+      GRPC_PORT: "4092"
+      DATABASE_URL: "postgresql://app:app_password@postgres:5432/app_user?schema=public"
+      CORS_ORIGIN: "http://localhost:8080"
+      GATEWAY_SECRET: "gateway-shared-secret"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4318"
+    depends_on:
+      user-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4002/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  notification-service:
+    build: { context: ., dockerfile: apps/notification-service/Dockerfile }
+    environment:
+      NODE_ENV: production
+      REDIS_URL: "redis://redis:6379"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4318"
+    depends_on:
+      redis: { condition: service_healthy }
+
+  gateway:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      CORS_ORIGIN: "http://localhost:8080"
+      REDIS_URL: "redis://redis:6379"
+      AUTH_SERVICE_URL: "http://auth-service:4001"
+      USER_SERVICE_URL: "http://user-service:4002"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4318"
+      <<: *secrets
+    ports:
+      - "4000:4000" # để test API trực tiếp (FE thật đi qua :8080)
+    depends_on:
+      auth-service: { condition: service_healthy }
+      user-service: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: { context: ., dockerfile: apps/web/Dockerfile }
+    ports:
+      - "8080:80" # cửa vào cho người dùng
+    depends_on:
+      gateway: { condition: service_healthy }

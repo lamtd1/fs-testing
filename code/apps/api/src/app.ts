@@ -31,6 +31,9 @@ export function createApp() {
     next();
   });
 
+  // Health của chính gateway (cho Docker healthcheck) — không proxy đi đâu.
+  app.get("/healthz", (_req, res) => res.json({ status: "ok", service: "gateway" }));
+
   // (7.4) Rate limit CHUNG cho mọi /api; giới hạn CHẶT riêng cho login/register.
   app.use("/api", generalLimiter);
   app.use(["/api/auth/login", "/api/auth/register"], authLimiter);
