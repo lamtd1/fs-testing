@@ -8,6 +8,7 @@ export * from "./validate.js";
 export * from "./http.js";
 export * from "./context.js";
 export * from "./saga.js";
+export * from "./retry.js";
 export * from "./registry.js";
 export * from "./grpc.js";
 export * from "./auth.js";

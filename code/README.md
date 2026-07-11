@@ -1,6 +1,6 @@
 # Fullstack Modern — Monorepo
 
-Repo thực hành theo tutorial. **Trạng thái hiện tại: Phần 6.2 (đã tách microservices).**
+Repo thực hành theo tutorial. **Trạng thái hiện tại: hết Phần 6 (microservices đầy đủ).**
 
 - **Phần 0-1**: monorepo + backend Express nền tảng.
 - **Phần 2**: Auth — JWT access/refresh, argon2, refresh rotation (Redis), RBAC.
@@ -8,7 +8,8 @@ Repo thực hành theo tutorial. **Trạng thái hiện tại: Phần 6.2 (đã 
 - **Phần 4**: Frontend React.
 - **Phần 5**: Message Queue (BullMQ).
 - **Phần 6**: Microservices — tách monolith thành **auth-service + user-service + notification-service**,
-  dùng chung `packages/shared`, gateway-lite ở `apps/api`. Xem `06-Phan-6-Microservices/`.
+  `packages/shared`, gateway-lite; REST+gRPC, correlation-id, saga, service registry, tracing
+  (OTel+Jaeger), resilience (timeout/retry/circuit breaker). Xem `06-Phan-6-Microservices/`.
 
 ## Kiến trúc hiện tại
 
