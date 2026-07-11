@@ -8,6 +8,7 @@ import { env } from "./config/env.js";
 import { serviceProxy } from "./proxy.js";
 import { stripSpoofedHeaders, attachUser, requireAuth } from "./middleware/gateway-auth.js";
 import { generalLimiter, authLimiter } from "./middleware/rate-limit.js";
+import { bffRoutes } from "./bff/bff.routes.js";
 
 export const logger = createLogger({ name: "gateway", nodeEnv: env.NODE_ENV });
 
@@ -37,6 +38,10 @@ export function createApp() {
   // (7.3) Chống giả mạo header + verify JWT một lần -> req.user.
   app.use(stripSpoofedHeaders);
   app.use(attachUser);
+
+  // (7.5) BFF: gateway TỰ gộp nhiều service (cần đăng nhập). Đặt TRƯỚC proxy để
+  // /api/bff không bị chuyển tiếp đi đâu — nó do CHÍNH gateway xử lý.
+  app.use("/api/bff", requireAuth, bffRoutes);
 
   // Route BẮT BUỘC đăng nhập (guard chạy TRƯỚC proxy tương ứng).
   app.use("/api/users", requireAuth); // quản trị user
