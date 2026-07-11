@@ -7,8 +7,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(4002),
   DATABASE_URL: z.string().url(),
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
-  // Cần để VERIFY access token cho route quản trị (authenticate + authorize ADMIN).
-  JWT_ACCESS_SECRET: z.string().min(16, "JWT_ACCESS_SECRET quá ngắn"),
+  // (7.3) Tin context do gateway gắn -> chỉ cần secret chung, KHÔNG cần JWT secret.
+  GATEWAY_SECRET: z.string().min(8, "GATEWAY_SECRET quá ngắn"),
   // Cổng gRPC cho gọi nội bộ (6.3).
   GRPC_PORT: z.coerce.number().default(4092),
 });

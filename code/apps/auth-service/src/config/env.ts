@@ -16,6 +16,9 @@ const envSchema = z.object({
 
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
 
+  // (7.3) Secret chung để tin header context do gateway gắn (route /me).
+  GATEWAY_SECRET: z.string().min(8, "GATEWAY_SECRET quá ngắn"),
+
   // Địa chỉ user-service để gọi liên service (tạo/đọc profile).
   USER_SERVICE_URL: z.string().url().default("http://localhost:4002"),
   // Địa chỉ gRPC của user-service (6.3): host:port, KHÔNG có scheme http.

@@ -1,0 +1,39 @@
+// API Gateway — pipeline: CORS → correlation-id → strip → verify JWT → route.
+import express from "express";
+import helmet from "helmet";
+import cors from "cors";
+import { pinoHttp } from "pino-http";
+import { createLogger, requestId, notFoundHandler, serviceRegistry } from "@app/shared";
+import { env } from "./config/env.js";
+import { serviceProxy } from "./proxy.js";
+import { stripSpoofedHeaders, attachUser, requireAuth } from "./middleware/gateway-auth.js";
+
+export const logger = createLogger({ name: "gateway", nodeEnv: env.NODE_ENV });
+
+const AUTH_TARGET = serviceRegistry.authHttp();
+const USER_TARGET = serviceRegistry.userHttp();
+
+export function createApp() {
+  const app = express();
+
+  app.use(helmet());
+  app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
+  // KHÔNG express.json() — để body stream nguyên vẹn cho proxy (service tự parse).
+  app.use(requestId);
+  app.use(pinoHttp({ logger, genReqId: (req) => (req as unknown as { id: string }).id }));
+
+  // (7.3) Chống giả mạo header + verify JWT một lần -> req.user.
+  app.use(stripSpoofedHeaders);
+  app.use(attachUser);
+
+  // Route BẮT BUỘC đăng nhập (guard chạy TRƯỚC proxy tương ứng).
+  app.use("/api/users", requireAuth); // quản trị user
+  app.use("/api/auth/me", requireAuth); // hồ sơ của chính mình
+
+  // Routing / proxy (giữ nguyên path, inject context xuống service).
+  app.use("/api/auth", serviceProxy(AUTH_TARGET, "/api/auth"));
+  app.use("/api/users", serviceProxy(USER_TARGET, "/api/users"));
+
+  app.use(notFoundHandler);
+  return app;
+}
