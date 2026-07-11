@@ -9,6 +9,8 @@ import {
   revokeRefreshToken,
 } from "./token.service.js";
 import { Conflict, Unauthorized } from "../../utils/errors.js";
+import { enqueueWelcomeEmail } from "../../queues/email/email.queue.js";
+import { logger } from "../../lib/logger.js";
 import type { RegisterInput, LoginInput } from "./auth.schema.js";
 
 // Chỉ trả những field an toàn cho client (KHÔNG lộ passwordHash).
@@ -27,6 +29,16 @@ export const authService = {
       name: input.name,
       passwordHash,
     });
+
+    // Gửi email chào mừng KHÔNG đồng bộ: chỉ THẢ job vào queue rồi đi tiếp.
+    // Việc gửi thật do worker làm nền -> user không phải chờ SMTP.
+    // Bọc try/catch: nếu Redis/queue có trục trặc, KHÔNG được làm hỏng việc
+    // đăng ký (email chào mừng là "nice-to-have", không phải bắt buộc).
+    try {
+      await enqueueWelcomeEmail({ userId: user.id, email: user.email, name: user.name });
+    } catch (err) {
+      logger.error({ err }, "Không enqueue được welcome email (bỏ qua)");
+    }
 
     const accessToken = signAccessToken(user);
     const refreshToken = await issueRefreshToken(user.id);

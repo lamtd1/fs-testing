@@ -7,6 +7,12 @@
   "engines": {
     "node": ">=20"
   },
+  "pnpm": {
+    "//": "Buộc 1 phiên bản ioredis duy nhất -> tránh xung đột type giữa ta và bullmq.",
+    "overrides": {
+      "ioredis": "5.11.1"
+    }
+  },
   "scripts": {
     "dev": "pnpm --filter @app/api dev",
     "dev:web": "pnpm --filter @app/web dev",

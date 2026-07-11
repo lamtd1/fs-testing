@@ -24,3 +24,6 @@ apps/api/prisma/*.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Claude Code local settings
+.claude/
