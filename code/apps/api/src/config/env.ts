@@ -18,6 +18,21 @@ const envSchema = z.object({
   REFRESH_TOKEN_TTL: z.string().default("7d"),
 
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
+
+  // --- OAuth / OIDC (Phần 3) ---
+  // Nơi trình duyệt được đưa về sau khi đăng nhập OAuth xong (frontend).
+  FRONTEND_URL: z.string().url().default("http://localhost:5173"),
+  // Base URL của CHÍNH api này, dùng để dựng redirect_uri gửi cho provider.
+  OAUTH_REDIRECT_BASE: z.string().url().default("http://localhost:4000"),
+
+  // Google (optional — chỉ cần khi bật đăng nhập Google).
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+
+  // Keycloak (optional). ISSUER dạng: http://localhost:8081/realms/app
+  KEYCLOAK_ISSUER: z.string().url().optional(),
+  KEYCLOAK_CLIENT_ID: z.string().optional(),
+  KEYCLOAK_CLIENT_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -1,6 +1,5 @@
-# docker-compose cho môi trường LOCAL: Postgres + Redis.
+# docker-compose cho môi trường LOCAL: chỉ chạy Postgres + Redis.
 # App (api) ta chạy trực tiếp bằng `pnpm dev` khi dev cho nhanh (hot reload).
-# Redis (Phần 2) dùng để lưu refresh token (rotation + reuse detection).
 # Ở Phần 8 ta sẽ đóng gói cả api/frontend vào compose để chạy full stack.
 
 services:
@@ -35,6 +34,21 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # Keycloak: Auth Server / Identity Provider dùng cho Phần 3 (OAuth/OIDC).
+  # Chạy ở chế độ dev, tự import realm "app" (client + user test) khi khởi động.
+  # Admin console: http://localhost:8081  (admin / admin)
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: app_keycloak
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
 
 volumes:
   postgres_data:

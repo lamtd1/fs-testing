@@ -4,8 +4,12 @@ import { validate } from "../../middleware/validate.js";
 import { authenticate } from "../../middleware/authenticate.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { registerSchema, loginSchema } from "./auth.schema.js";
+import { oauthRoutes } from "./oauth/oauth.routes.js";
 
 export const authRoutes = Router();
+
+// Đăng nhập qua provider ngoài: /api/auth/oauth/:provider/{login,callback}
+authRoutes.use("/oauth", oauthRoutes);
 
 authRoutes.post("/register", validate({ body: registerSchema }), asyncHandler(authController.register));
 authRoutes.post("/login", validate({ body: loginSchema }), asyncHandler(authController.login));
