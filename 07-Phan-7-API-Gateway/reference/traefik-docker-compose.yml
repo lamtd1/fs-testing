@@ -1,0 +1,33 @@
+# THAM KHẢO (không nối vào docker-compose chính): cùng routing bằng Traefik.
+# Điểm mạnh Traefik: KHÔNG cần file route riêng — đọc "nhãn" (labels) trên mỗi
+# service để tự dựng route + tự lo TLS (Let's Encrypt). Rất hợp Docker/k8s.
+
+services:
+  traefik:
+    image: traefik:v3.1
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080" # dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  auth-service:
+    image: app/auth-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=PathPrefix(`/api/auth`)"
+      - "traefik.http.services.auth.loadbalancer.server.port=4001"
+
+  user-service:
+    image: app/user-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user.rule=PathPrefix(`/api/users`)"
+      - "traefik.http.services.user.loadbalancer.server.port=4002"
+# So với Express: routing ở đây là KHAI BÁO (labels), không viết code. Nhưng verify
+# JWT tập trung + BFF aggregation (7.3, 7.5) thì Traefik phải dùng middleware/plugin,
+# gượng hơn tự viết -> tutorial vẫn tự viết để giữ toàn quyền.
