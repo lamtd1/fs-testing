@@ -1,0 +1,18 @@
+# Giữ build context NHỎ + tránh ghi đè cài đặt trong image bằng file host.
+node_modules
+**/node_modules
+**/dist
+**/.turbo
+
+# Prisma client sinh ở host (image sẽ tự generate lại đúng nền Linux)
+**/src/generated
+
+# Env thật — KHÔNG bao giờ đưa vào image (secret truyền lúc chạy)
+.env
+**/.env
+**/.env.local
+
+# Vặt
+**/*.log
+.DS_Store
+**/.DS_Store
