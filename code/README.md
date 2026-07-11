@@ -4,7 +4,7 @@ Repo thực hành theo tutorial. **Trạng thái hiện tại: Phần 6.2 (đã 
 
 - **Phần 0-1**: monorepo + backend Express nền tảng.
 - **Phần 2**: Auth — JWT access/refresh, argon2, refresh rotation (Redis), RBAC.
-- **Phần 3**: OAuth 2.0 / OIDC (Google & Keycloak). *(đang chờ port sang auth-service ở 6.2b)*
+- **Phần 3**: OAuth 2.0 / OIDC (Google & Keycloak) — đã port sang auth-service ở 6.2b.
 - **Phần 4**: Frontend React.
 - **Phần 5**: Message Queue (BullMQ).
 - **Phần 6**: Microservices — tách monolith thành **auth-service + user-service + notification-service**,
@@ -74,8 +74,8 @@ curl -s $B/api/auth/me -H "Authorization: Bearer $ADMIN"
 curl -s "$B/api/users" -H "Authorization: Bearer $ADMIN"
 ```
 
-> **Lưu ý:** đăng nhập OAuth (nút Google/Keycloak ở FE) tạm thời chưa chạy — OAuth sẽ được
-> chuyển sang auth-service ở commit **6.2b**. Đăng nhập email/mật khẩu hoạt động bình thường.
+> **OAuth** (Google/Keycloak) đã chạy ở auth-service: mở trình duyệt tới
+> `http://localhost:4000/api/auth/oauth/keycloak/login` (qua gateway). Xem 6.2b.
 
 ## Cấu trúc (rút gọn)
 

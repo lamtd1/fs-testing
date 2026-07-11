@@ -22,10 +22,26 @@ enum Role {
 model Credential {
   userId       String   @id
   email        String   @unique
-  passwordHash String
+  // Nullable: user đăng ký qua OAuth (6.2b) KHÔNG có mật khẩu (chỉ login bằng provider).
+  passwordHash String?
   role         Role     @default(USER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  oauthAccounts OAuthAccount[]
+
   @@map("credentials")
+}
+
+// Liên kết danh tính từ provider ngoài (Google/Keycloak) với credential nội bộ.
+model OAuthAccount {
+  id                String     @id @default(cuid())
+  provider          String // "google" | "keycloak"
+  providerAccountId String // "sub" do provider cấp
+  userId            String
+  credential        Credential @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  createdAt         DateTime   @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@map("oauth_accounts")
 }

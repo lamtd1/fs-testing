@@ -18,6 +18,15 @@ const envSchema = z.object({
 
   // Địa chỉ user-service để gọi liên service (tạo/đọc profile).
   USER_SERVICE_URL: z.string().url().default("http://localhost:4002"),
+
+  // --- OAuth / OIDC (6.2b) ---
+  FRONTEND_URL: z.string().url().default("http://localhost:5173"),
+  OAUTH_REDIRECT_BASE: z.string().url().default("http://localhost:4000"),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  KEYCLOAK_ISSUER: z.string().url().optional(),
+  KEYCLOAK_CLIENT_ID: z.string().optional(),
+  KEYCLOAK_CLIENT_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

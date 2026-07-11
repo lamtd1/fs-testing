@@ -67,7 +67,8 @@ export const authService = {
   }> {
     const cred = await credentialRepository.findByEmail(input.email);
     // Thông báo chung chung -> chống email enumeration.
-    if (!cred) throw Unauthorized("Email hoặc mật khẩu không đúng");
+    // passwordHash null = tài khoản CHỈ đăng nhập bằng OAuth -> không cho login mật khẩu.
+    if (!cred || !cred.passwordHash) throw Unauthorized("Email hoặc mật khẩu không đúng");
 
     const ok = await verifyPassword(cred.passwordHash, input.password);
     if (!ok) throw Unauthorized("Email hoặc mật khẩu không đúng");
