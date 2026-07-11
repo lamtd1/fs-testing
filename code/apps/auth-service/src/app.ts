@@ -1,6 +1,5 @@
 import express from "express";
 import helmet from "helmet";
-import cors from "cors";
 import cookieParser from "cookie-parser";
 import { pinoHttp } from "pino-http";
 import { requestId, notFoundHandler, createErrorHandler } from "@app/shared";
@@ -12,8 +11,8 @@ import { authRoutes } from "./modules/auth/auth.routes.js";
 export function createApp() {
   const app = express();
 
+  // (7.4) CORS đã tập trung ở gateway -> service không cần.
   app.use(helmet());
-  app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
   app.use(express.json());
   app.use(cookieParser());
   app.use(requestId);

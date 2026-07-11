@@ -8,6 +8,8 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   AUTH_SERVICE_URL: z.string().url().default("http://localhost:4001"),
   USER_SERVICE_URL: z.string().url().default("http://localhost:4002"),
+  // (7.4) rate limiting dùng Redis dùng chung -> giới hạn đúng khi scale nhiều gateway.
+  REDIS_URL: z.string().url().default("redis://localhost:6379"),
 
   // Verify JWT tại gateway (7.3) — phải TRÙNG secret mà auth-service ký.
   JWT_ACCESS_SECRET: z.string().min(16, "JWT_ACCESS_SECRET quá ngắn"),

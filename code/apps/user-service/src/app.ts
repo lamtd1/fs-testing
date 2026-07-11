@@ -1,6 +1,5 @@
 import express from "express";
 import helmet from "helmet";
-import cors from "cors";
 import { pinoHttp } from "pino-http";
 import { requestId, notFoundHandler, createErrorHandler } from "@app/shared";
 import { env } from "./config/env.js";
@@ -12,8 +11,8 @@ import { internalUserRoutes } from "./modules/user/internal.routes.js";
 export function createApp() {
   const app = express();
 
+  // (7.4) KHÔNG cần CORS ở service nội bộ — CORS đã tập trung ở gateway.
   app.use(helmet());
-  app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
   app.use(express.json());
   app.use(requestId);
   app.use(pinoHttp({ logger, genReqId: (req) => (req as unknown as { id: string }).id }));
